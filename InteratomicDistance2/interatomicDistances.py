@@ -55,21 +55,65 @@ def get_data(file_name):
     acell, steps = get_numbers(raw_acell), get_steps(raw_steps)
     return (acell, steps)
 
-def calc_distances(data, pair_ids):
-    def calc_shifts(acell):
+def calc_distances(acell, steps, atom_pairs_ids):
+    def generate_shifts():
         from itertools import product
         base = [-1, 0, 1]
         #generate variations with repetition
         shifts_norm = map(np.array, product(base, base, base))
         shifts = [sn * acell for sn in shifts_norm]
         return shifts
-    acell, steps = data
-    calc_shifts(acell)
+
+    def calc_pair_distances(pair, shifts):
+        from numpy import linalg as la
+        atom1, atom2 = pair
+        diff = atom2 - atom1
+        pair_distances = [la.norm(diff + sh) for sh in shifts]
+        return pair_distances   
+
+    def fetch_all_pairs():
+        for step in steps:
+            for pair_ids in atom_pairs_ids:
+                id1, id2 = pair_ids
+                atom1, atom2 = step[id1], step[id2]
+                yield (atom1, atom2)
+
+    shifts = generate_shifts()
+    print len(shifts)
+    pairs = fetch_all_pairs()
+    cpd = calc_pair_distances
+    distances = [dist for p in pairs for dist in cpd(p, shifts)]
+    return distances
+
+def plot_hist(distances):
+    import matplotlib.pyplot as plt
+    print len(distances)
+
+    plt.hist(map(lambda x: x * 0.529, distances), 100, normed=True)
+    #plt.hist([2, 3, 4])
+    plt.title("Interatomic Distances")
+    plt.xlabel("Distances Angst")
+    plt.show()
 
 def main(file_name):
-    data = get_data(file_name)
-    calc_distances(data, [])
+    acell, steps = get_data(file_name)
+    dists = calc_distances(acell, steps, [[4, 5]])
+    plot_hist(dists)
     #print steps[0]
+    #test_calc_distances()
+
+def test_calc_distances():
+    acell = np.array([2, 0, 0])
+    steps = [
+        [
+            np.array([0, 0, 0]),
+            np.array([1, 0, 0])
+        ]
+    ]
+    pairs_ids = [[0, 1]]
+    dist = calc_distances(acell, steps, pairs_ids)
+    assert min(dist) == 1
+    assert max(dist) == 3
 
 if __name__ == "__main__":
     main(sys.argv[1])

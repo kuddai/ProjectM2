@@ -3,38 +3,143 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Interatomic distances for MD</title>
-    <link href="Styles/bootstrap.min.css" rel="stylesheet" />
+    <link href="Styles/bootstrap-slate.min.css" rel="stylesheet" />
     <link href="Styles/fileinput.min.css" media="all" rel="stylesheet" />
     <link href="Styles/main.css" rel="stylesheet" />
     <script src="Scripts/jquery-2.1.3.min.js"></script>
     <script src="Scripts/fileinput.min.js"></script>
     <script src="Scripts/bootstrap.min.js"></script>
     <script src="Scripts/fileinput_locale_ru.js"></script>
+    <script src="Scripts/d3.v3.4.8.min.js"></script>
+    <script src="Scripts/dimple.v2.1.2.min.js"></script>
     <script src="Scripts/app.js"></script>
 </head>
 <body>
-    <div class=container>
-        <div class="row">
-            <input id="file-input" type="file" class="file" data-show-preview="false" data-show-upload="false" data-show-remove="false">
+    <div class="jumbotron">
+        <div class="container">
+            <h1>Межатомные Расстояния</h1>
         </div>
+    </div>
+
+    <div class=container>
         <div class="row top-buffer">
-            <div class="panel-group neat-box" id="collapse">
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <h4 class="panel-title">
-                            <a data-toggle="collapse" data-parent="#collapse" href="#collapse-one" id="preview-header">
-                                Предпросмотр
-                            </a>
-                        </h4>
-                    </div>
-                    <div id="collapse-one" class="panel-collapse collapse">
-                        <div class="panel-body plain-text limited-text" id="preview">
-                            Выберите файл для предпросмотра
+            <!--Левая колонка-->
+            <div class="col-md-8">
+                <!--Панель управления-->
+                <div class="panel panel-primary box-shadow" id="main-panel">
+                    <div class="panel-heading"></div>
+                    <div class="panel-body">
+
+                        <div class="panel panel-info">
+                            <div class="panel-heading"></div>
+                            <div class="panel-body" id="graph">
+                            </div>
                         </div>
+
+                        <!--Панель загрузки данных-->
+                        <div class="panel panel-default">
+                            <div class="panel-heading">Загрузка данных</div>
+                            <div class="panel-body">
+                                <p>Выберите выходной файл расчета молекулярной динамики ABINIT</p>
+                                <input id="file-input" type="file" class="file" data-show-preview="false" data-show-upload="false" data-show-remove="false">
+                                <!--Панель предпросмотра-->
+                                <div class="panel-group top-buffer" id="collapse-preview">
+                                    <div class="panel panel-info">
+                                        <div class="panel-heading">
+                                            <h4 class="panel-title">
+                                                <a data-toggle="collapse" data-parent="#collapse-preview" href="#collapse-one" id="preview-header">
+                                                    Предпросмотр
+                                                </a>
+                                            </h4>
+                                        </div>
+                                        <div id="collapse-one" class="panel-collapse collapse">
+                                            <div class="panel-body plain-text limited-text" id="preview">Сначала выберите файл</div>
+                                        </div>
+                                    </div>
+                                <!--Конец панели предпросмотра-->
+                                </div>
+                            </div>
+                        <!--Конец панели загрузки данных-->
+                        </div>
+
+                        <!--Панель параметров графика-->
+                        <div class="panel panel-default">
+                            <div class="panel-heading"><h4 class="panel-title">Учитывать растояние между атомами</h4></div>
+                            <div class="panel-body">
+                                <form class="form-horizontal" id="atom-form">
+                                    Атомы:&nbsp;&nbsp;
+                                    <span id="atoms"></span>
+                                    &nbsp;&nbsp;
+                                    <button type="submit" class="btn btn-primary" disabled id="launch-graph">Построить график</button>
+                                </form>
+                            </div>
+                        <!--Конец панели параметров графика-->
+                        </div>
+
+                        <div class="alert alert-danger" role="alert" id="error-panel"></div>
+                    </div>
+                    
+                <!--Конец панели управления-->
+                </div>
+            <!--Конец левой колонки-->
+            </div>
+            
+            <!--Правая колонка-->
+            <div class="col-md-4">
+                <div class="panel panel-info box-shadow">
+                    <div class="panel-heading">
+                        <h4 class="panel-title">Сведения</h4>
+                    </div>
+                    <div class="panel-body" id="info">
+                        Нет данных
                     </div>
                 </div>
             </div>
+            <!--Конец правой колонки-->
+
         </div>
     </div>
+    <script>
+        
+    </script>
+    <script type="text/template" data-template="info">
+        
+        <ul class="list-group">
+            <li class="list-group-item">
+                Количество атомов
+                <span class="badge">{{atoms-count}}</span>
+            </li>
+            <li class="list-group-item">
+                Количество шагов MD
+                <span class="badge">{{steps-count}}</span>
+            </li>
+            <li class="list-group-item">
+                Данные для графика
+                <span class="badge">{{data-count}}</span>
+            </li>
+            <li class="list-group-item">
+                Расстояния в ангстремах
+            </li>
+            <li class="list-group-item">
+                Мин. Расстояние
+                <span class="badge">{{min-dist}}</span>
+            </li>
+            <li class="list-group-item">
+                Сред. Расстояние
+                <span class="badge">{{average-dist}}</span>
+            </li>
+            <li class="list-group-item">
+                Макс. Расстояние
+                <span class="badge">{{max-dist}}</span>
+            </li>
+
+        </ul>
+    </script>
+
+    <script type="text/template" data-template="atoms">
+        <label class="checkbox-inline">
+            <input type="checkbox" name="{{atom-id}}" value="{{atom-id}}"><span class="badge">{{atom-id}}</span>
+        </label>
+    </script>
 </body>
 </html>

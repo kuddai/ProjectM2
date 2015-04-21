@@ -1,14 +1,27 @@
-﻿
+﻿body {
+    background-image: url('../Assests/background_sharp.png');
+    background-repeat: repeat;
+}
+
 .plain-text {
     font-family: monospace;
-    white-space:pre-wrap;
+    white-space: pre-wrap;
 }
+
 .limited-text {
-    max-height:400px;
-    overflow-y:auto;
+    max-height: 400px;
+    overflow-y: auto;
 }
-.neat-box {
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    border-radius: 3px;
+
+.box-shadow {
+    box-shadow: 0 0 10px rgba(0,0,0,0.35);
 }
-.top-buffer { margin-top:20px; }
+
+.top-buffer {
+    margin-top: 20px;
+}
+
+#graph {
+    height: 400px;
+    background-color: LAVENDER;
+}

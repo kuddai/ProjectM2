@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interatomic distances for MD</title>
+    <link href="Styles/bootstrap.min.css" rel="stylesheet" />
+    <link href="Styles/fileinput.min.css" media="all" rel="stylesheet" />
+    <link href="Styles/main.css" rel="stylesheet" />
+    <script src="Scripts/jquery-2.1.3.min.js"></script>
+    <script src="Scripts/fileinput.min.js"></script>
+    <script src="Scripts/bootstrap.min.js"></script>
+    <script src="Scripts/fileinput_locale_ru.js"></script>
+    <script src="Scripts/app.js"></script>
+</head>
+<body>
+    <div class=container>
+        <div class="row">
+            <input id="file-input" type="file" class="file" data-show-preview="false" data-show-upload="false" data-show-remove="false">
+        </div>
+        <div class="row top-buffer">
+            <div class="panel-group neat-box" id="collapse">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4 class="panel-title">
+                            <a data-toggle="collapse" data-parent="#collapse" href="#collapse-one" id="preview-header">
+                                Предпросмотр
+                            </a>
+                        </h4>
+                    </div>
+                    <div id="collapse-one" class="panel-collapse collapse">
+                        <div class="panel-body plain-text limited-text" id="preview">
+                            Выберите файл для предпросмотра
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

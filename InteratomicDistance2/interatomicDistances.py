@@ -41,8 +41,7 @@ def get_data(file_name):
         return re.findall(step_pattern, text)   
 
     def get_numbers(raw_numbers):
-        numbers = [float(raw_num) for raw_num in raw_numbers.split()]
-        return np.array(numbers)
+        return np.array(map(float, raw_numbers.split()))
 
     def get_steps(raw_steps):
         def get_step(raw_step):
@@ -56,16 +55,20 @@ def get_data(file_name):
     acell, steps = get_numbers(raw_acell), get_steps(raw_steps)
     return (acell, steps)
 
-def get_acell(file_name):
-    pass
-
-def calc_distances():
-    pass
+def calc_distances(data, pair_ids):
+    def calc_shifts(acell):
+        from itertools import product
+        base = [-1, 0, 1]
+        #generate variations with repetition
+        shifts_norm = map(np.array, product(base, base, base))
+        shifts = [sn * acell for sn in shifts_norm]
+        return shifts
+    acell, steps = data
+    calc_shifts(acell)
 
 def main(file_name):
-    acell, steps = get_data(file_name)
-    print acell
-    print steps[0]
+    data = get_data(file_name)
+    calc_distances(data, [])
     #print steps[0]
 
 if __name__ == "__main__":

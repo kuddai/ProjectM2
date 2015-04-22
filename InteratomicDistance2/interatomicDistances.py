@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import argparse
 
 def get_data(file_name):
     import re
@@ -85,6 +86,11 @@ def calc_distances(acell, steps, atom_pairs_ids):
     distances = [dist for p in pairs for dist in cpd(p, shifts)]
     return distances
 
+def get_pairs_id(atoms_ids):
+    from itertools import combinations
+    atoms_ids = list(set(atoms_ids))#ensure uniqueness
+    return list(combinations(atoms_ids, 2))
+
 def plot_hist(distances):
     import matplotlib.pyplot as plt
     print len(distances)
@@ -95,9 +101,16 @@ def plot_hist(distances):
     plt.xlabel("Distances Angst")
     plt.show()
 
-def main(file_name):
-    acell, steps = get_data(file_name)
-    dists = calc_distances(acell, steps, [[4, 5]])
+def main():
+    parser = argparse.ArgumentParser(description='Plot hists of interatomic distances')
+    parser.add_argument('file_name', help='a path to the ABINIT MD output file')
+    parser.add_argument('atoms_ids', type=int, nargs='+', help='indexes of atoms included in interatomic distances')
+    parser.add_argument('-ng', '--number_of_gaussians', type=int, default=1, help='number of gaussians to approximate distribution')
+    parser.add_argument('-o', '-offset', type=float, help='offset distances in Angst. Normalized distribution possible only with this option')
+    args = parser.parse_args()
+    acell, steps = get_data(args.file_name)
+    pairs_ids = get_pairs_id(args.atoms_ids)
+    dists = calc_distances(acell, steps, pairs_ids)
     plot_hist(dists)
     #print steps[0]
     #test_calc_distances()

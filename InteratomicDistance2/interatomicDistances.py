@@ -112,21 +112,6 @@ def main():
     pairs_ids = get_pairs_id(args.atoms_ids)
     dists = calc_distances(acell, steps, pairs_ids)
     plot_hist(dists)
-    #print steps[0]
-    #test_calc_distances()
-
-def test_calc_distances():
-    acell = np.array([2, 0, 0])
-    steps = [
-        [
-            np.array([0, 0, 0]),
-            np.array([1, 0, 0])
-        ]
-    ]
-    pairs_ids = [[0, 1]]
-    dist = calc_distances(acell, steps, pairs_ids)
-    assert min(dist) == 1
-    assert max(dist) == 3
 
 if __name__ == "__main__":
     main(sys.argv[1])

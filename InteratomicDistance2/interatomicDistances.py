@@ -155,10 +155,10 @@ def main():
     print "generated pairs", map(lambda p: (p[0] + 1, p[1] + 1), pairs_ids) #convert from zero based to 1 based
     dists = calc_distances(acell, steps, pairs_ids)
     dists = map(lambda x: x * 0.529, dists)#from Bohr to Angst
-    print "number of distances before offset", len(dists)  
+    print "number of distances before offseting operation", len(dists)  
     if args.offset:
         dists = filter(lambda x: x < args.offset, dists)
-    print "number of distances after offset", len(dists)  
+    print "number of distances after offseting operation", len(dists)  
     
     print "min distance", min(dists)
     print "max distance", max(dists)

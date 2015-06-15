@@ -18,15 +18,20 @@ def get_data(file_name):
             return file.read()
 
     def get_raw_acell(text):
-        """we must extract acell pattern like this one:
-            acell      7.6962876214E+00  7.6962876214E+00  7.6962876214E+00 Bohr
-              amu      1.06000000E+02  2.00000000E+00              
+        """
+        we must extract acell pattern like this one:
+        acell      7.6962876214E+00  7.6962876214E+00  7.6962876214E+00 Bohr
+        amu      1.06000000E+02  2.00000000E+00              
         """
         acell_pattern = re.compile(r"""
-            acell\s+#header - indicate acell parameter
-            (?P<acell>#Catch acell values in Bohr
-                (?:#Match excatly 3 numbers. We don't catch this group
-                    (?:-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?)\s+#number in scientific notation. We don't catch this group
+            #header - indicate acell parameter
+            acell\s+
+            #Catch acell values in Bohr
+            (?P<acell>
+                #Match excatly 3 numbers. We don't catch this group
+                (?:
+                    #number in scientific notation. We don't catch this group
+                    (?:-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?)\s+
                 ){3}
             )Bohr
             """, re.VERBOSE)
@@ -38,13 +43,21 @@ def get_data(file_name):
             Cartesian coordinates (xcart) [bohr]
             1.75255604597822E-03  2.44698778617683E-03  3.18934151739078E-05
             3.84712955498547E+00 -1.92096780059473E-03  3.84685455237236E+00
-            2.47640757288980E-03  3.84891394970560E+00  3.84925589870608E+00     
+            2.47640757288980E-03  3.84891394970560E+00  3.84925589870608E+00
         """       
         step_pattern = re.compile(r"""
-            Cartesian\scoordinates\s\(xcart\)\s\[bohr\]\s+#header - indicate that there are atom coordinates in bohr after it
-            ( #catch pattern (number in scientific notation with possible spaces after it) as many times as you can  
-                (?: #Match spaces and new lines after number. We don't catch this group
-                    (?:-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?)#number in scientific notation. We don't catch this group
+            #header - indicate that there are atom coordinates 
+            #in bohr units after it
+            Cartesian\scoordinates\s\(xcart\)\s\[bohr\]\s+
+            ( #catch pattern 
+              #(number in scientific notation with 
+              #possible spaces after it) 
+              #as many times as you can 
+                #Match spaces and new lines after number. 
+                #We don't catch this group 
+                (?: 
+                    #number in scientific notation. We don't catch this group
+                    (?:-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?)
                 \s+)
             +)
             """, re.VERBOSE)   
@@ -96,8 +109,10 @@ def calc_distances(acell, steps, atom_pairs_ids):
 
 def get_pairs_id(atoms_ids):
     from itertools import combinations
-    atoms_ids = map(lambda x: x - 1, atoms_ids)#due to the fact that list first element starts from 0
-    atoms_ids = list(set(atoms_ids))#ensure uniqueness
+    #due to the fact that list first element starts from 0 index
+    atoms_ids = map(lambda x: x - 1, atoms_ids)
+    #ensure uniqueness
+    atoms_ids = list(set(atoms_ids))
     return list(combinations(atoms_ids, 2))
 
 def plot_hist(dists, num_bins):
@@ -144,17 +159,42 @@ def plot_hist_norm(dists, num_bins, mu, sigma):
     plt.show()
 
 def main():
-    parser = argparse.ArgumentParser(description='Plot hists of interatomic distances')
-    parser.add_argument('file_name', help='a path to the ABINIT MD output file')
-    parser.add_argument('atoms_ids', type=int, nargs='+', help='indexes of atoms included in interatomic distances')
-    parser.add_argument('-o', '--offset', type=float, help='offset for distances in Angst. To exclude atoms far away. Normalized distribution is possible only with this option')
-    parser.add_argument('-nb', '--number_of_bins', type=int, default=75, help='number of bins which will be used to plot histogram')
+    desc =  '''
+            Plot hists of interatomic distances 
+            for ABINIT MD output file 
+            (only for orthohonal rprim)
+            '''
+    file_help = 'A path to the ABINIT MD output file'
+    atoms_help = 'Indexes of atoms included in interatomic distances'
+    offset_help =   """
+                    Offset for distances in Angst. 
+                    Default disabled.
+                    To exclude irrelevant atoms. 
+                    Normalized distribution graph is 
+                    possible only when this option is 
+                    used
+                    """
+    bins_help = """
+                Number of bins which will be used to plot histogram.
+                Default  is 75.
+                """
+
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('file_name', help=file_help)
+    parser.add_argument('atoms_ids', type=int, nargs='+', help=atoms_help)
+    parser.add_argument('-o', '--offset', type=float, help=offset_help)
+    parser.add_argument('-nb', '--number_of_bins', type=int, default=75, help=bins_help)
+
     args = parser.parse_args()
     acell, steps = get_data(args.file_name)
     pairs_ids = get_pairs_id(args.atoms_ids)
-    print "generated pairs", map(lambda p: (p[0] + 1, p[1] + 1), pairs_ids) #convert from zero based to 1 based
+
+    #convert from zero based to 1 based
+    print "generated pairs", map(lambda p: (p[0] + 1, p[1] + 1), pairs_ids) 
+
     dists = calc_distances(acell, steps, pairs_ids)
-    dists = map(lambda x: x * 0.529, dists)#from Bohr to Angst
+    #convert from default ABINIT Bohr units to Angst
+    dists = map(lambda x: x * 0.529, dists)
     print "number of distances before offseting operation", len(dists)  
     if args.offset:
         dists = filter(lambda x: x < args.offset, dists)
@@ -165,7 +205,8 @@ def main():
     mu, sigma = np.mean(dists), np.std(dists)
     print "mean distance", mu
     print "standard deviation", sigma
-    print "probability within 1.5 angst", norm_prob(sigma, mu, 0, 1.5)
+    print "probability value within 1.5 angst", norm_prob(sigma, mu, 0, 1.5)
+
     if args.offset:
         plot_hist_norm(dists, args.number_of_bins, mu, sigma)
     else:

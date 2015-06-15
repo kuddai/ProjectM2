@@ -2,6 +2,15 @@ import sys
 import numpy as np
 import argparse
 
+def norm_prob(sigma, mu, x1, x2):
+    import math
+    from scipy.integrate import quad
+    k = 1 / (sigma * math.sqrt(2 * math.pi))
+    s = -1.0 / (2 * sigma * sigma)
+    def f(x):
+        return k * math.exp(s * (x - mu) * (x - mu))
+    return quad(f, x1, x2)
+
 def get_data(file_name):
     import re
     def get_text():
@@ -69,7 +78,7 @@ def calc_distances(acell, steps, atom_pairs_ids):
         from numpy import linalg as la
         atom1, atom2 = pair
         diff = atom2 - atom1
-        pair_distances = [la.norm(diff + sh) for sh in shifts]
+        pair_distances = [la.norm(sh + diff) for sh in shifts]
         return pair_distances   
 
     def fetch_all_pairs():
@@ -80,7 +89,6 @@ def calc_distances(acell, steps, atom_pairs_ids):
                 yield (atom1, atom2)
 
     shifts = generate_shifts()
-    print len(shifts)
     pairs = fetch_all_pairs()
     cpd = calc_pair_distances
     distances = [dist for p in pairs for dist in cpd(p, shifts)]
@@ -88,30 +96,81 @@ def calc_distances(acell, steps, atom_pairs_ids):
 
 def get_pairs_id(atoms_ids):
     from itertools import combinations
+    atoms_ids = map(lambda x: x - 1, atoms_ids)#due to the fact that list first element starts from 0
     atoms_ids = list(set(atoms_ids))#ensure uniqueness
     return list(combinations(atoms_ids, 2))
 
-def plot_hist(distances):
+def plot_hist(dists, num_bins):
     import matplotlib.pyplot as plt
-    print len(distances)
+    
 
-    plt.hist(map(lambda x: x * 0.529, distances), 100, normed=True)
+    plt.hist(dists, num_bins)
     #plt.hist([2, 3, 4])
-    plt.title("Interatomic Distances")
+    plt.title(r'Histogram of Interatomic Distances')
     plt.xlabel("Distances Angst")
+    plt.show()
+
+def plot_hist_norm(dists, num_bins, mu, sigma):
+    import matplotlib.mlab as mlab
+    import matplotlib.pyplot as plt
+    font_size = 30
+    # the histogram of the data
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    n, bins, patches = ax.hist(dists, num_bins, normed=1, facecolor='green', alpha=0.5)
+    left = min(bins) * 0.85
+    right = max(bins) * 1.15
+    bins = np.insert(bins, [0, len(bins)], [left, right])
+    #bins = np.append(bins, right)
+    # add a 'best fit' line
+    y = mlab.normpdf(bins, mu, sigma)
+
+    ax.plot(bins, y, 'r--', linewidth=2.7)
+    plt.xlabel('Distances Angst', fontsize=font_size)
+    plt.ylabel('Probability Density', fontsize=font_size)
+    legend = r'$\mu={0:.2f},\ \sigma={1:.2f}$'.format(mu, sigma)
+    ax.text(0.8, 0.9, legend, 
+        horizontalalignment='center', 
+        verticalalignment='center', 
+        transform=ax.transAxes, 
+        fontsize=30,
+        bbox=dict(facecolor='red', alpha=0.5) )
+    
+    plt.title(r'Histogram of Interatomic Distances', fontsize = 30)
+    plt.tick_params(axis='both', which='major', labelsize=25)
+    plt.tick_params(axis='both', which='minor', labelsize=25)
+    # Tweak spacing to prevent clipping of ylabel
+    plt.subplots_adjust(left=0.15)
     plt.show()
 
 def main():
     parser = argparse.ArgumentParser(description='Plot hists of interatomic distances')
     parser.add_argument('file_name', help='a path to the ABINIT MD output file')
     parser.add_argument('atoms_ids', type=int, nargs='+', help='indexes of atoms included in interatomic distances')
-    parser.add_argument('-ng', '--number_of_gaussians', type=int, default=1, help='number of gaussians to approximate distribution')
-    parser.add_argument('-o', '-offset', type=float, help='offset distances in Angst. Normalized distribution possible only with this option')
+    parser.add_argument('-o', '--offset', type=float, help='offset for distances in Angst. To exclude atoms far away. Normalized distribution is possible only with this option')
+    parser.add_argument('-nb', '--number_of_bins', type=int, default=75, help='number of bins which will be used to plot histogram')
     args = parser.parse_args()
     acell, steps = get_data(args.file_name)
     pairs_ids = get_pairs_id(args.atoms_ids)
+    print "generated pairs", map(lambda p: (p[0] + 1, p[1] + 1), pairs_ids) #convert from zero based to 1 based
     dists = calc_distances(acell, steps, pairs_ids)
-    plot_hist(dists)
+    dists = map(lambda x: x * 0.529, dists)#from Bohr to Angst
+    print "number of distances before offset", len(dists)  
+    if args.offset:
+        dists = filter(lambda x: x < args.offset, dists)
+    print "number of distances after offset", len(dists)  
+    
+    print "min distance", min(dists)
+    print "max distance", max(dists)
+    mu, sigma = np.mean(dists), np.std(dists)
+    print "mean distance", mu
+    print "standard deviation", sigma
+    print "probability within 1.5 angst", norm_prob(sigma, mu, 0, 1.5)
+    if args.offset:
+        plot_hist_norm(dists, args.number_of_bins, mu, sigma)
+    else:
+        plot_hist(dists, args.number_of_bins)
+
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main()
